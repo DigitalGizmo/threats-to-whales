@@ -1,0 +1,63 @@
+/* Noto Sans — the design's typeface. Google Fonts, SIL Open Font License,
+   self-hosted the same way fluke carries Sedan. One variable file covers every
+   weight and the whole width axis; the design uses 87.5% ("SemiCondensed")
+   everywhere except the CLOSE link, which is at 100%.
+
+   font-display: block, not swap — popup radii are measured from rendered text,
+   so a fallback face rendering first would size the circles wrong. */
+@font-face {
+  font-family: "Noto Sans";
+  src: url('./assets/fonts/noto-sans/NotoSans.woff2') format('woff2');
+  font-weight: 100 900;
+  font-stretch: 62.5% 100%;
+  font-style: normal;
+  font-display: block;
+}
+
+/* Colours read from the Figma layer fills. The file defines no Figma
+   variables — get_variable_defs returns {} — so these come from the layers. */
+:root {
+  --hotspot-fill: rgb(86 155 208 / 0.08);  /* #569BD0 at 8% */
+  --hotspot-stroke: #c1d7ff;
+  --hotspot-label: #fff;
+
+  --popup-fill: #e4efff;
+  --popup-stroke: #7580b9;
+  --popup-text: #002545;
+  --popup-close: #0140a7;
+
+  /* Designer's value. She expects this to come down, so it lives in one
+     place — change it here, nowhere else. */
+  --scrim: rgb(0 0 0 / 0.66);
+
+  /* TODO: not pulled from Figma — the desktop app's active tab was not a
+     design file when this was written. Both values are estimates off the
+     comp screenshot. Pull node 8:21 and replace. */
+  --title-color: #123a66;
+  --title-size: 90px;
+
+  --font: "Noto Sans", system-ui, sans-serif;
+
+  /* The Figma frame is 1920x1080. Everything inside .stage is authored at
+     those exact pixel values and scaled to fit the viewport. */
+  --stage-w: 1920;
+  --stage-h: 1080;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  font-family: var(--font);
+  background: #000;
+}
+
+#app {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}

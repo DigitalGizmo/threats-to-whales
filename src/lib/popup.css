@@ -1,0 +1,63 @@
+/* Popup styles live in a plain stylesheet, not scoped inside Popup.svelte,
+   because measure.js builds an offscreen copy of this markup outside Svelte to
+   size the circle. Scoped styles would not reach it and the measurement would
+   be wrong. Values read from the Figma popup frames.
+
+   Pairs with circle-shape.css, which carries the two shape-outside polygons. */
+
+.popup {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--popup-fill);
+  /* The 1px stroke is drawn as an inset ring, NOT as a border. A border would
+     shrink the content box to 2r-2, so the two exclusion floats would be 50% of
+     that — describing a circle 1px smaller than the element they sit in. The
+     shape and the circle would disagree, and because line-wrapping is discrete
+     that 1px error cascades: it measured 27% taller content and blew the radius
+     calibration. box-shadow paints the same 1px line with no layout effect. */
+  box-shadow: inset 0 0 0 1px var(--popup-stroke);
+  filter: drop-shadow(0 4px 2px rgb(0 0 0 / 0.25));
+  color: var(--popup-text);
+  font-size: 32px;
+  font-stretch: 87.5%;
+  line-height: normal;
+  text-align: center;
+
+  /* Required. Without it the content's top margin — which is how the copy gets
+     centred — collapses out of the circle and moves the whole popup down the
+     page instead of moving the text down inside it. */
+  display: flow-root;
+}
+
+.popup-title {
+  margin: 0;
+  font-size: 32px;   /* same size as the body; bold is the only difference */
+  font-weight: 700;
+  line-height: normal;
+}
+
+.popup-body {
+  margin: 0;
+}
+
+.popup-close {
+  margin: 0;
+}
+
+.popup-close button {
+  /* inline-block sits on the text baseline, which adds a descender gap under
+     the line and makes the measured content taller than it looks — enough to
+     push every computed radius ~7% over the calibration. vertical-align:top
+     removes it. */
+  vertical-align: top;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 32px;
+  font-weight: 500;
+  font-stretch: 100%;   /* the one thing in the design that is not condensed */
+  letter-spacing: 0.64px;
+  color: var(--popup-close);
+  text-decoration: underline;
+}

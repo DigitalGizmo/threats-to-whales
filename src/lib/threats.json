@@ -1,0 +1,147 @@
+[
+  {
+    "id": "plastic",
+    "label": "Plastic Pollution",
+    "labelBox": {
+      "x": 337,
+      "y": 802,
+      "w": 220
+    },
+    "hotspot": {
+      "cx": 450.0,
+      "cy": 768.0,
+      "r": 80.0
+    },
+    "body": "Humpback whales ingest huge amounts of microplastics (1 million pieces per day) due to their reliance on krill, which eat the plastic first. Toothed whales ingest more macroplastics, such as plastic bags and packaging, as they confuse this material for prey during deep water hunting."
+  },
+  {
+    "id": "prey-depletion",
+    "label": "Prey Depletion",
+    "labelBox": {
+      "x": 172,
+      "y": 469,
+      "w": 170
+    },
+    "hotspot": {
+      "cx": 257.0,
+      "cy": 553.0,
+      "r": 125.0
+    },
+    "popup": {
+      "cx": 398,
+      "cy": 687,
+      "_source": "approx, measured off live-presentation screenshot"
+    },
+    "body": "Declines in forage species have an adverse impact on large whales as one of their key food sources. As a result, whale populations in some areas have dropped to critically low numbers."
+  },
+  {
+    "id": "noise",
+    "label": "Noise Pollution",
+    "labelBox": {
+      "x": 1158,
+      "y": 445,
+      "w": 170
+    },
+    "hotspot": {
+      "cx": 1241.0,
+      "cy": 442.0,
+      "r": 65.0
+    },
+    "body": "Underwater noise comes from recreational and commercial ship traffic and loud sound blasts used for oil and gas exploration and seafloor mapping. Noise disrupts whale migration, breeding, communication, and navigation. Some sounds can also be physically harmful, impairing hearing and even causing brain hemorrhage."
+  },
+  {
+    "id": "climate",
+    "label": "Climate Change",
+    "labelBox": {
+      "x": 8,
+      "y": 391,
+      "w": 244
+    },
+    "hotspot": {
+      "cx": 130.0,
+      "cy": 368.0,
+      "r": 100.0
+    },
+    "body": "As the planet warms, whales face habitat shifts and resource or trophic mismatch, where whales arrive at traditional feeding grounds only to find their prey has moved on. These changes have already affected the timing and ranges of whale migrations."
+  },
+  {
+    "id": "hunting",
+    "label": "Commercial Hunting",
+    "labelBox": {
+      "x": 829,
+      "y": 433,
+      "w": 170
+    },
+    "hotspot": {
+      "cx": 914.0,
+      "cy": 368.0,
+      "r": 110.0
+    },
+    "popup": {
+      "cx": 1159,
+      "cy": 465,
+      "_source": "approx, measured off live-presentation screenshot"
+    },
+    "body": "In 1982, the International Whaling Commission (IWC) banned commercial whale hunting. Norway, Iceland, and Japan left the IWC in protest and continue to hunt whales. In 2023, 825 whales were killed by hunters from these three countries."
+  },
+  {
+    "id": "human",
+    "label": "Human Interference",
+    "labelBox": {
+      "x": 447,
+      "y": 373,
+      "w": 170
+    },
+    "hotspot": {
+      "cx": 525.0,
+      "cy": 363.0,
+      "r": 85.0
+    },
+    "body": "Human leisure activities near the shore (boating, swimming, whale watching) can become highly disruptive to whales and interfere with vital behaviors (resting, nursing, and feeding). This disturbance can result in chronic stress and the expenditure of excess energy. In order to help whales cope, humans should stay back at least 500 yards."
+  },
+  {
+    "id": "entanglement",
+    "label": "Entanglement",
+    "labelBox": {
+      "x": 477,
+      "y": 514,
+      "w": 170
+    },
+    "hotspot": {
+      "cx": 562.0,
+      "cy": 585.0,
+      "r": 100.0
+    },
+    "body": "Whales can only swim forward, which makes them highly susceptible to entanglement in fishing gear. Humpback whales have a slight advantage over right whales as humpbacks are more agile and do not instinctively roll when they encounter rope lines."
+  },
+  {
+    "id": "ship-strikes",
+    "label": "Ship Strikes",
+    "labelBox": {
+      "x": 1131,
+      "y": 678,
+      "w": 170
+    },
+    "hotspot": {
+      "cx": 1213.0,
+      "cy": 640.0,
+      "r": 125.0
+    },
+    "body": "Major shipping lanes tend to overlap with important whale feeding grounds and migration routes. Once a whale is in a vessel's path, its poor underwater eyesight, the boat's speed, surrounding sound pollution, and local weather conditions can make it hard for whales to avoid ship strikes."
+  },
+  {
+    "id": "pollution",
+    "label": "Industrial Pollution",
+    "labelBox": {
+      "x": 1501,
+      "y": 395,
+      "w": 170
+    },
+    "hotspot": {
+      "cx": 1587.0,
+      "cy": 370.0,
+      "r": 125.0
+    },
+    "body": "Industrial pollutants are toxins and heavy metals that make it into the ocean. Organisms at the top of the food chain, such as whales, are exposed to an increased concentration of these harmful compounds. Known effects for whales include birth defects, calf mortality, higher potential for disease, and acute poisoning."
+  }
+]
