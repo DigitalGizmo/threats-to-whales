@@ -4,13 +4,11 @@
   // JPEG, so there is nothing to bake — and drawing them keeps the label crisp
   // when the stage scales past 100%, which a 1x raster would not.
   let { threat, onSelect } = $props();
-
-  const { cx, cy, r } = threat.hotspot;
 </script>
 
 <button
   class="hotspot"
-  style="left: {cx - r}px; top: {cy - r}px; width: {2 * r}px; height: {2 * r}px;"
+  style="left: {threat.hotspot.cx - threat.hotspot.r}px; top: {threat.hotspot.cy - threat.hotspot.r}px; width: {2 * threat.hotspot.r}px; height: {2 * threat.hotspot.r}px;"
   aria-label={threat.label}
   onclick={() => onSelect(threat.id)}
 ></button>
