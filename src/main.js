@@ -1,6 +1,5 @@
 import { mount } from 'svelte'
 import './app.css'
-import './lib/circle-shape.css'
 import './lib/popup.css'
 import App from './App.svelte'
 

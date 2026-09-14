@@ -19,6 +19,11 @@
 
   let activeThreat = $derived(threats.find((t) => t.id === activeThreatId) ?? null);
 
+  // The popup stays mounted for its shrink-back after activeThreatId goes null,
+  // and reads its threat while it does. So it is handed the last threat opened,
+  // which is never null once set, rather than activeThreat.
+  let shownThreat = $state(/** @type {typeof threats[number] | null} */ (null));
+
   let timeoutId = /** @type {number | undefined} */ (undefined);
 
   function close() {
@@ -34,6 +39,7 @@
 
   function select(id) {
     activeThreatId = id;
+    shownThreat = threats.find((t) => t.id === id) ?? null;
     resetTimeout();
   }
 
@@ -67,7 +73,7 @@
     <Hotspot {threat} onSelect={select} />
   {/each}
 
-  {#if activeThreat}
+  {#if activeThreat && shownThreat}
     <!-- A button, not a div: it is the main way to dismiss the popup, so it
          needs to be reachable without a pointer. -->
     <button class="scrim" aria-label="Close" onclick={close} transition:fade={{ duration: 200 }}
@@ -76,8 +82,8 @@
          component. Today the scrim makes that impossible, but Popup measures
          its geometry once at init, and this is what keeps that correct if
          direct switching is ever turned on. -->
-    {#key activeThreat.id}
-      <Popup threat={activeThreat} onClose={close} />
+    {#key shownThreat.id}
+      <Popup threat={shownThreat} onClose={close} />
     {/key}
   {/if}
 </Stage>

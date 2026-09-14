@@ -4,10 +4,10 @@
 
   let { threat, onClose } = $props();
 
-  // Radius, centring offset and position are all measured or derived — see
+  // Radius, text width and position are all measured or derived — see
   // measure.js. It resolves synchronously (and memoises per threat), so the
   // element is at its final size on the first frame and the transition below
-  // has something stable to scale.
+  // has something stable to scale. Centring is flexbox, in popup.css.
   let geom = $derived(popupGeometry(threat));
 
   // Grow out of the hotspot, shrink back into it. A popup is often placed well
@@ -38,10 +38,7 @@
   aria-label={threat.label}
   transition:grow
 >
-  <div class="popup-exclude-left"></div>
-  <div class="popup-exclude-right"></div>
-
-  <div class="popup-content" style="margin-top: {geom.offset}px;">
+  <div class="popup-content" style="width: {geom.w}px;">
     <h2 class="popup-title">{threat.label}</h2>
     <p class="popup-body">{threat.body}</p>
     <p class="popup-close"><button onclick={onClose}>CLOSE</button></p>

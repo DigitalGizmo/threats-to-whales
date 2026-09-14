@@ -134,7 +134,7 @@ The frame also carries a title, `8:21` "Threats to Whales" at x=52 y=0,
 gets drawn too.
 
 ## The Popup
-Contents, top to bottom, inset 1em from the content box (see the sizing note):
+Contents, top to bottom, kept 1.5em inside the circle's edge (see Sizing):
 
 1. **Title** — the hotspot's own label, repeated. The label is painted into the
    background art too, but the scrim dims it and the popup covers it, so the
@@ -152,112 +152,76 @@ Contents, top to bottom, inset 1em from the content box (see the sizing note):
 - Close: the word **CLOSE**, uppercase, `32px`, weight 500, `font-stretch: 100%`
   (not condensed like the body), `#0140a7`, underlined, `letter-spacing: 0.64px`
 
-### Sizing — the radius is computed, not authored
-The popup's radius is **derived at runtime from its copy**, so each circle comes
-out as full as its text allows and editing a `body` string in the JSON resizes
-its circle automatically. There is no `popup.r` in the data.
+### Sizing and layout — flexbox, with width and radius computed
+The copy — title, body, CLOSE — is **one rectangular block centred in the
+circle by flexbox** (`display: flex; align-items: center; justify-content:
+center` on `.popup`, in `popup.css`). The designer chose this over wrapping the
+text to the curve: simpler, more understandable, repeatable in the long run.
 
-Binary-search the smallest radius whose wrapped copy still occupies no more than
-`FILL` of the circle's height (`FILL = 0.82`). The predicate is monotonic —
-shrinking the radius narrows every chord, so the content only ever gets taller —
-which makes the search safe. About 20 iterations converges to the pixel.
+**After editing copy in `threats.json` there is nothing to do** — no script, no
+hand-tuning. Both the block's width and the circle's radius are derived at
+runtime by `measure.js`, so there is no `popup.r` or width in the data.
 
-`FILL` is a loose knob, not a precise one, because the same feedback that makes
-the search safe also damps it: a smaller circle makes taller text which resists
-shrinking further.
+#### How measure.js sizes a popup
+Try every text-block width, 2px apart, from the title's own width (so the title
+can never wrap) up to 1000px. At each width, lay the copy out offscreen and find
+the line-box corner farthest from the block's centre; the circle needed is that
+distance plus the inset (`INSET_EM = 1.5`, i.e. 48px at 32px type). Keep the
+width that needs the smallest circle.
 
-**Calibrated in the running app** against her real copy at her real type, the
-value is **`FILL = 0.74`** with **`shape-margin: 1.5em`**.
+Line boxes come from `Range.getClientRects()` on the text, not from the block,
+so ragged centred lines count at their real width. Runs once per threat on first
+open and is memoised.
 
-0.74 is the largest value at which no title wraps to two lines. Above it the
-centred block reaches into the narrow top cap where the chord is too short for
-the longer titles — "Commercial Hunting" (302px) and "Human Interference"
-(299px) break first, at 0.76. Every title fitting on one line is what the design
-shows, so it is the binding constraint.
+#### Consequences
+- **Roundness varies with the line breaks.** Some popups' text mass reads as
+  round; others read more like a column in a circle. Seen and accepted.
+- **The fit is tight by construction** — the widest lines' corners sit on the
+  inset circle. There is no fill knob; for more air, raise `INSET_EM`.
+- **Not matched to the Figma frames.** They are hand-set, and not what shipped
+  anyway (the live Commercial Hunting circle measured r≈375 against the frame's
+  300). The computed values win so the circles stay honest when copy changes.
 
-This deliberately gives up radius parity with the **Figma popup frames** — 0.74
-runs ~37px larger than those. Two reasons that is right:
+#### Things that will bite
+1. **Popup CSS cannot live in the component.** `measure.js` builds an offscreen
+   copy of the popup markup outside Svelte; scoped styles would not reach it and
+   every measurement would be wrong. Hence `src/lib/popup.css` as a plain global
+   stylesheet imported from `main.js`.
+2. **The offscreen markup must match `Popup.svelte`** — including CLOSE being a
+   `<button>`, whose weight, width and letter-spacing differ from the body. Change
+   one, change the other.
+3. The 1px stroke is `box-shadow: inset`, not `border`. That was critical under
+   the old shape-outside layout; with flexbox it just keeps the circle exactly the
+   measured size.
 
-- Those frames are not what shipped. Measured off the live presentation, the
-  Commercial Hunting circle is about r=375 against the frame's r=300. The live
-  version is already bigger than Figma, and the no-wrap constraint lands in the
-  same place.
-- Matching the frames exactly is not achievable anyway: her text sits in a
-  *rectangle* inside each circle, ours wraps to the *curve*, so ours needs more
-  height for the same words. Chasing her numbers produced visibly worse
-  layout — at `FILL = 0.92` the radii matched to a mean of 5px and the titles
-  wrapped.
+Resulting sizes, against the Figma frames for reference:
 
-Resulting radii, against the Figma frames for reference:
+| threat | Figma frame r | computed r | text width |
+|---|---|---|---|
+| plastic | 313 | 327 | 533 |
+| prey-depletion | 275.5 | 280 | 377 |
+| noise | 320 | 346 | 510 |
+| climate | 300 | 322 | 427 |
+| hunting | 300 | 312 | 460 |
+| human | 340.5 | 358 | 523 |
+| entanglement | 300 | 321 | 498 |
+| ship-strikes | 321.5 | 323 | 482 |
+| pollution | 340 | 348 | 471 |
 
-| threat | Figma frame r | computed r |
-|---|---|---|
-| plastic | 313 | 359 |
-| prey-depletion | 275.5 | 301 |
-| noise | 320 | 376 |
-| climate | 300 | 337 |
-| hunting | 300 | 334 |
-| human | 340.5 | 382 |
-| entanglement | 300 | 338 |
-| ship-strikes | 321.5 | 357 |
-| pollution | 340 | 363 |
+Largest is 358, so 716px across — comfortably inside the 1080 height. These
+land within 2–26px of her frames, much closer than the shape-outside version
+did (which ran ~37px over).
 
-Largest is 382, so 764px across — comfortably inside the 1080 height.
+#### The previous approach, kept at git tag `shape-outside`
+Before flexbox, the copy wrapped to the **curve** of the circle using two floats
+with `shape-outside` polygons (generated by `tools/circle-shape.py`), a JS
+vertical-centring loop, and a radius from a `FILL = 0.74` height-ratio search.
+It looked rounder and cost considerably more machinery. Everything — code, the
+two comparison harnesses in `tools/`, and this file's full notes on it — is at
+the tag:
 
-### Text layout: wrapped to the circle
-The copy wraps to the **curve of the circle**, not to a rectangle inscribed in
-it. The designer faked that shape by hand in Figma with manual line breaks;
-since the copy lives in JSON and has to stay editable, the shape has to be
-produced by the browser instead.
-
-**Verified working** — see `tools/shape-test.html`, which renders three radii
-with a dashed overlay on the true circle edge. Open it in a browser.
-
-#### The technique
-Two floats, each half the circle's width and its full height, carrying a
-`shape-outside` polygon that describes the part of that half-box lying *outside*
-the circle. Every line box is then clipped to the circle's chord at its own
-height. Generate the polygons with `tools/circle-shape.py`:
-
-    python3 tools/circle-shape.py > src/lib/circle-shape.css
-
-The values are percentages of each float's own box, so they are **scale-free** —
-the same two rules serve every popup radius, and nothing needs regenerating when
-a radius changes. Markup order matters: both floats come before the content.
-
-#### Three things that will bite
-1. **`display: flow-root` on the popup is required.** Without it the content
-   block's top margin collapses out of the circle and moves the whole popup down
-   the page instead of moving the text down inside it. This looks like the
-   centring silently failing.
-2. **Vertical centring needs JavaScript.** Floats fill from the top, so text
-   stacks in the narrow upper cap and leaves the bottom empty. Measure the
-   content height and set its `margin-top` to `(H - h) / 2` — but *iterate*:
-   moving the text changes which chords it wraps against, which changes its
-   height. It settles in two or three passes.
-3. **`shape-margin` is what gives the inset**, and it is a true perpendicular
-   inset from the curve — better than padding, which would only inset a
-   rectangle. Set it to **1.5em**, which is what the design actually measures,
-   not the 1em the notes claimed.
-4. **The circle's 1px stroke must not be a `border`.** A border shrinks the
-   content box to `2r - 2`, so the two exclusion floats become 50% of *that* —
-   describing a circle 1px smaller than the element containing them. The shape
-   and the circle disagree. Because line-wrapping is discrete the error does not
-   stay small: at one radius it measured content 27% taller and threw the
-   calibration out completely. Paint it with `box-shadow: inset 0 0 0 1px`,
-   which has no layout effect. Same applies to any future padding on `.popup`.
-5. **Popup CSS cannot live in the component.** `measure.js` builds an offscreen
-   copy of the popup markup outside Svelte to size it; Svelte's scoped styles
-   would not apply to that copy and every measurement would be wrong. Hence
-   `src/lib/popup.css` and `src/lib/circle-shape.css` as plain global
-   stylesheets imported from `main.js`.
-
-#### Consequence for the copy
-Our wrapping will not reproduce the designer's hand-broken lines exactly, and
-the auto-sizer will not land on her exact radii either. Both are expected. Use
-her radii to calibrate `FILL` once, then let the computed value win — that keeps
-the circles honest when the copy is edited later, which hand-set radii would
-not.
+    git show shape-outside:CLAUDE.md          # its notes (Sizing / Text layout)
+    git checkout shape-outside -- src/lib tools src/main.js   # restore its code
 
 ## Data Model
 `src/lib/threats.json` — one entry per threat, geometry in stage pixels
@@ -325,10 +289,9 @@ screenshots, not measurements — good enough to build against, not to ship.
 - `App.svelte` — holds `activeThreatId`, the idle timer, and the mode config
 - `Stage.svelte` — copied from fluke, unchanged
 - `Hotspot.svelte` — props: `threat`; transparent button, calls `onSelect(id)`
-- `Popup.svelte` — props: `threat`, `onClose`; renders the two exclusion floats,
-  title, body and the Close link, runs the radius search then the vertical-
-  centring pass, and stops click propagation so taps inside it don't reach the
-  scrim
+- `Popup.svelte` — props: `threat`, `onClose`; renders title, body and the
+  Close link in one block at the width and radius `measure.js` computes. The
+  scrim is a sibling, not an ancestor, so taps inside never reach it
 - The illustration is a bare `<img>` in `App.svelte` unless it needs inlining
 
 ## Figma MCP Pull Checklist
@@ -348,8 +311,8 @@ the primary one), `get_metadata` (node tree as XML, with positions and sizes),
       subtract the frame's own origin to get the 1920x1080 stage coordinates the
       data model uses.
 - [x] Read the nine hotspot centres, radii and label text
-- [x] Popup radii read and used to calibrate `FILL`/`shape-margin` (see the
-      table under Sizing). **Popup centres do not exist** — the popup frames are
+- [x] Popup radii read (see the table under Sizing — they calibrated the
+      shape-outside version; the flexbox version needs no calibration). **Popup centres do not exist** — the popup frames are
       not placed on the artboard. Position is derived instead.
 - [x] Read the nine body paragraphs as single strings
 - [x] Read the popup title's type treatment (size, weight, colour) — it differs
@@ -372,10 +335,11 @@ the primary one), `get_metadata` (node tree as XML, with positions and sizes),
 
 ## Settled
 - Illustration is pure vector; circles and labels baked into it
-- Popup radius is computed from the copy at runtime (`FILL = 0.82`), not read
-  from Figma; 1em inset all round, applied as `shape-margin` off the curve
-- Popup body is one wrapping paragraph, wrapped to the circle by the browser —
-  the designer's hand-faked line breaks are not reproduced or needed
+- Popup text is a flexbox-centred rectangle, not wrapped to the curve; its width
+  and the circle's radius are computed from the copy at runtime, 1.5em inset
+  (shape-outside version kept at git tag `shape-outside`)
+- Popup body is one wrapping paragraph — the designer's hand-faked line breaks
+  are not reproduced or needed
 - Popup repeats the hotspot's label as its title
 - Close link on its own line as the last item in the flow, centred — not pinned
   to the circle's bottom
@@ -427,6 +391,4 @@ npm run build:kiosk  # -> dist/, loadable from disk
 ```
 
 Layout is verified by driving the real app in a browser rather than by eye —
-that is how the border bug and the title wrapping were both caught. The scratch
-harness in `tools/shape-test.html` is still useful for isolating the
-shape-outside behaviour on its own.
+that is how the border bug and the title wrapping were both caught.
