@@ -1,0 +1,238 @@
+<!doctype html><meta charset=utf-8>
+<title>Flex vs shape-outside</title>
+<!-- Compares the designer's flexbox-centred circle against the current
+     shape-outside wrap, using the real copy, real type and the production
+     measure.js. Needs Vite (it imports JSON and src/ modules), so with the dev
+     server running open http://localhost:5173/tools/flex-test.html -->
+<link rel="stylesheet" href="/src/app.css">
+<link rel="stylesheet" href="/src/lib/popup.css">
+<link rel="stylesheet" href="/src/lib/circle-shape.css">
+<style>
+  body { padding: 24px; background: #0b2b3d; color: #cee9f4; font: 13px/1.5 ui-monospace, monospace; }
+  /* Production popups inherit the family from app.css's body rule, which the
+     monospace above replaces — so restore it on the popups themselves. */
+  .popup { font-family: var(--font); }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .note { max-width: 70em; color: #9fc2d2; margin: 0 0 20px; }
+  table.summary { border-collapse: collapse; margin-bottom: 28px; }
+  .summary th, .summary td { padding: 3px 14px 3px 0; text-align: right; }
+  .summary th:first-child, .summary td:first-child { text-align: left; }
+  .bad { color: #ff9a8a; }
+  .ok { color: #9be39b; }
+  h2.threat { font-size: 14px; margin: 18px 0 6px; }
+  .row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { text-align: center; margin-top: 4px; }
+  /* Popups are real size inside; the frame shrinks them for display. */
+  .frame { position: relative; overflow: visible; }
+  .frame > .popup { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+
+  /* The designer's approach. Overrides popup.css's flow-root. */
+  .popup.flex { display: flex; align-items: center; justify-content: center; }
+  .popup.flex > .popup-content { flex: none; }
+  .popup.flex.same-r > .popup-content { width: calc(100% - 3em); }
+
+  /* Guides: solid-ish red is the true edge, dashed is the 1.5em inset. */
+  .popup::after, .popup::before { content: ''; position: absolute; border-radius: 50%; pointer-events: none; }
+  .popup::after { inset: 0; outline: 2px dashed #c33; outline-offset: -1px; border-radius: 50%; }
+  .popup::before { inset: 1.5em; border: 1px dashed #c3333388; }
+</style>
+
+<h1>Circle text: flexbox centring vs shape-outside wrap</h1>
+<p class="note">
+  Three columns per threat, all at production type (Noto Sans 32px) with the 1.5em inset.
+  <b>A</b> current technique, tightened: text wraps to the curve, radius searched at <span id="fill"></span>
+  (production is 0.74 — "prod r"), then grown 1px at a time until the title sits on one line. Try <code>?fill=0.8</code>.
+  <b>B</b> flexbox at A's radius, text in a centred rectangle.
+  <b>C</b> flexbox, best case: every text-block width is tried and the smallest circle that contains the block's line boxes inside the inset is kept.
+  "out" counts text line boxes with a corner past the dashed inset circle. Displayed at 45%.
+</p>
+<table class="summary"><thead><tr>
+  <th>threat</th><th>prod r</th><th>A r</th><th>A out</th><th>B out</th><th>C r</th><th>C / A</th><th>C fits 1080?</th>
+</tr></thead><tbody id="summary"></tbody></table>
+<div id="out"></div>
+
+<script type="module">
+import threats from '/src/lib/threats.json';
+import { popupGeometry } from '/src/lib/measure.js';
+
+const SCALE = 0.45;
+// Tighter than production's 0.74. Production can't go higher because two long
+// titles wrap; here the title guard in shapeGeometry handles that per popup.
+const FILL = parseFloat(new URLSearchParams(location.search).get('fill') ?? '0.82');
+const INSET = 48;              // 1.5em at 32px
+const STAGE_H = 1080, EDGE = 24;
+
+await Promise.all([
+  document.fonts.load('400 32px "Noto Sans"'),
+  document.fonts.load('700 32px "Noto Sans"'),
+  document.fonts.load('500 32px "Noto Sans"'),
+]);
+await document.fonts.ready;
+
+function contentHTML(t) {
+  const c = document.createElement('div');
+  c.className = 'popup-content';
+  c.innerHTML = '<h2 class="popup-title"></h2><p class="popup-body"></p><p class="popup-close">CLOSE</p>';
+  c.querySelector('.popup-title').textContent = t.label;
+  c.querySelector('.popup-body').textContent = t.body;
+  return c;
+}
+
+// Per-line boxes of the rendered text, from the text nodes themselves so that
+// ragged centred lines are measured at their real width, not the block's.
+function lineRects(content) {
+  const rects = [];
+  for (const el of content.children) {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    for (const rect of r.getClientRects()) if (rect.width > 0) rects.push(rect);
+  }
+  return rects;
+}
+
+// Farthest line-box corner from (cx, cy).
+function reach(rects, cx, cy) {
+  let m = 0;
+  for (const q of rects)
+    for (const x of [q.left, q.right]) for (const y of [q.top, q.bottom])
+      m = Math.max(m, Math.hypot(x - cx, y - cy));
+  return m;
+}
+
+// Rects come back after the display scale, so undo it before comparing with r.
+function countOut(popup, r) {
+  const b = popup.getBoundingClientRect();
+  const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+  let n = 0;
+  for (const q of lineRects(popup.querySelector('.popup-content')))
+    if (reach([q], cx, cy) / SCALE > r - INSET + 0.5) n++;
+  return n;
+}
+
+function makePopup(t, r, kind) {
+  const p = document.createElement('div');
+  p.className = 'popup' + (kind === 'A' ? '' : ' flex') + (kind === 'B' ? ' same-r' : '');
+  p.style.width = p.style.height = 2 * r + 'px';
+  p.style.transform = `scale(${SCALE})`;
+  if (kind === 'A') {
+    p.insertAdjacentHTML('beforeend', '<div class="popup-exclude-left"></div><div class="popup-exclude-right"></div>');
+  }
+  p.appendChild(contentHTML(t));
+  return p;
+}
+
+function figure(popup, r, caption) {
+  const fig = document.createElement('figure');
+  const frame = document.createElement('div');
+  frame.className = 'frame';
+  frame.style.width = frame.style.height = 2 * r * SCALE + 'px';
+  frame.appendChild(popup);
+  fig.appendChild(frame);
+  fig.insertAdjacentHTML('beforeend', `<figcaption>${caption}</figcaption>`);
+  return fig;
+}
+
+// measure.js's search with FILL as a parameter, plus a guard production lacks:
+// if the centred title wraps at that radius, grow until it doesn't.
+function shapeGeometry(t, fill) {
+  const host = document.createElement('div');
+  host.style.cssText = 'position:absolute; left:-99999px; top:0; visibility:hidden;';
+  const p = makePopup(t, 0, 'A');
+  p.style.transform = '';
+  host.appendChild(p);
+  document.body.appendChild(host);
+  const c = p.querySelector('.popup-content');
+  const titleRange = document.createRange();
+  titleRange.selectNodeContents(c.querySelector('.popup-title'));
+
+  const setR = (r) => { p.style.width = p.style.height = 2 * r + 'px'; };
+  const heightAt = (r) => { setR(r); c.style.marginTop = '0px'; return c.getBoundingClientRect().height; };
+  const centre = (r) => {
+    setR(r);
+    let offset = 0;
+    for (let i = 0; i < 8; i++) {
+      c.style.marginTop = offset + 'px';
+      const next = Math.max(0, Math.round((2 * r - c.getBoundingClientRect().height) / 2));
+      if (next === offset) break;
+      offset = next;
+    }
+    return offset;
+  };
+
+  let lo = 120, hi = 420;
+  for (let i = 0; i < 22; i++) {
+    const mid = (lo + hi) / 2;
+    if (heightAt(mid) <= fill * 2 * mid) hi = mid; else lo = mid;
+  }
+  let r = Math.ceil(hi);
+  let offset = centre(r);
+  while (titleRange.getClientRects().length > 1) offset = centre(++r);
+
+  host.remove();
+  return { r, offset };
+}
+
+// Best rectangle for flexbox: for each width, measure the block, and the radius
+// is whatever reaches its farthest line corner plus the inset.
+const probe = document.createElement('div');
+probe.style.cssText = 'position:absolute; left:-99999px; top:0; visibility:hidden;';
+probe.className = 'popup';   // inherit the popup's type
+probe.style.display = 'block';
+document.body.appendChild(probe);
+
+function bestFlex(t) {
+  const c = contentHTML(t);
+  probe.replaceChildren(c);
+  // Narrowest width that keeps the title on one line. Measured from the title's
+  // text, not its block — a block title is as wide as the widest sibling.
+  const range = document.createRange();
+  range.selectNodeContents(c.querySelector('.popup-title'));
+  const titleW = Math.ceil(range.getBoundingClientRect().width);
+  let best = { r: Infinity, w: 0 };
+  for (let w = titleW; w <= 1000; w += 2) {
+    c.style.width = w + 'px';
+    const b = c.getBoundingClientRect();
+    const r = reach(lineRects(c), b.left + w / 2, b.top + b.height / 2) + INSET;
+    if (r < best.r) best = { r, w };
+  }
+  return { r: Math.ceil(best.r), w: best.w };
+}
+
+document.getElementById('fill').textContent = 'fill ' + FILL;
+const out = document.getElementById('out');
+const summary = document.getElementById('summary');
+
+for (const t of threats) {
+  const { r: rProd } = popupGeometry(t);
+  const { r: rA, offset } = shapeGeometry(t, FILL);
+  const { r: rC, w: wC } = bestFlex(t);
+
+  out.insertAdjacentHTML('beforeend', `<h2 class="threat">${t.id}</h2>`);
+  const row = document.createElement('div');
+  row.className = 'row';
+  out.appendChild(row);
+
+  const A = makePopup(t, rA, 'A');
+  A.querySelector('.popup-content').style.marginTop = offset + 'px';
+  const B = makePopup(t, rA, 'B');
+  const C = makePopup(t, rC, 'C');
+  C.querySelector('.popup-content').style.width = wC + 'px';
+
+  const figA = figure(A, rA, ''), figB = figure(B, rA, ''), figC = figure(C, rC, '');
+  row.append(figA, figB, figC);
+
+  const outA = countOut(A, rA), outB = countOut(B, rA), outC = countOut(C, rC);
+  const cls = (n) => (n ? 'bad' : 'ok');
+  figA.querySelector('figcaption').innerHTML = `A shape-outside · r=${rA} · <span class="${cls(outA)}">out ${outA}</span>`;
+  figB.querySelector('figcaption').innerHTML = `B flex, same r · <span class="${cls(outB)}">out ${outB}</span>`;
+  figC.querySelector('figcaption').innerHTML = `C flex best · r=${rC} · w=${wC} · <span class="${cls(outC)}">out ${outC}</span>`;
+
+  const fits = 2 * rC + 2 * EDGE <= STAGE_H;
+  summary.insertAdjacentHTML('beforeend', `<tr>
+    <td>${t.id}</td><td>${rProd}</td><td>${rA}</td><td class="${cls(outA)}">${outA}</td><td class="${cls(outB)}">${outB}</td>
+    <td>${rC}</td><td>${(rC / rA).toFixed(2)}</td>
+    <td class="${fits ? 'ok' : 'bad'}">${fits ? 'yes' : 'no (' + (2 * rC) + 'px)'}</td></tr>`);
+}
+probe.remove();
+</script>
