@@ -75,7 +75,7 @@
     "hotspot": {
       "cx": 914.0,
       "cy": 368.0,
-      "r": 110.0
+      "r": 150.0
     },
     "popup": {
       "cx": 1159,
@@ -88,14 +88,14 @@
     "id": "human",
     "label": "Human Interference",
     "labelBox": {
-      "x": 447,
+      "x": 438,
       "y": 373,
       "w": 170
     },
     "hotspot": {
       "cx": 525.0,
       "cy": 363.0,
-      "r": 85.0
+      "r": 100.0
     },
     "body": "Human leisure activities near the shore (boating, swimming, whale watching) can become highly disruptive to whales and interfere with vital behaviors (resting, nursing, and feeding). This disturbance can result in chronic stress and the expenditure of excess energy. In order to help whales cope, humans should stay back at least 500 yards."
   },
@@ -109,7 +109,7 @@
     },
     "hotspot": {
       "cx": 562.0,
-      "cy": 585.0,
+      "cy": 565.0,
       "r": 100.0
     },
     "body": "Whales can only swim forward, which makes them highly susceptible to entanglement in fishing gear. Humpback whales have a slight advantage over right whales as humpbacks are more agile and do not instinctively roll when they encounter rope lines."
