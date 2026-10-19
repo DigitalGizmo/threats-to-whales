@@ -58,8 +58,9 @@ Kiosk uses `VITE_BASE_URL=./` so it works loaded from disk, and bundles
 ### Idle reset
 There is no attract screen to return to, so the idle timer's only job is to
 close an open popup and leave the clean base screen for the next visitor.
-`VITE_IDLE_TIMEOUT` in seconds; `0` disables. Kiosk shorter than review
-(fluke uses 120 / 180).
+`VITE_IDLE_TIMEOUT` in seconds; `0` disables. **40s in both kiosk and
+review** — a visitor only reads a single bubble, so fluke's 120 / 180 was
+far too long here.
 
 ## Interaction
 - **Input:** primarily touch; plain `onclick` handlers cover both touch and
