@@ -58,7 +58,7 @@ Kiosk uses `VITE_BASE_URL=./` so it works loaded from disk, and bundles
 ### Idle reset
 There is no attract screen to return to, so the idle timer's only job is to
 close an open popup and leave the clean base screen for the next visitor.
-`VITE_IDLE_TIMEOUT` in seconds; `0` disables. **40s in both kiosk and
+`VITE_IDLE_TIMEOUT` in seconds; `0` disables. **30s in both kiosk and
 review** — a visitor only reads a single bubble, so fluke's 120 / 180 was
 far too long here.
 
@@ -68,17 +68,22 @@ far too long here.
 - **One popup at a time.** State is a single `activeThreatId: string | null`.
 - **Opening:** tap a hotspot → the illustration dims and that threat's popup
   grows out of the hotspot.
-- **While a popup is open the whole background is dimmed and inactive.** The
-  scrim is a visible dim covering the full 1920x1080, and it sits *above* the
-  hotspot layer, so the other eight hotspots cannot be reached. There is no
-  shortcut from one popup to another — close, then tap.
+- **While a popup is open the whole background is dimmed, but the other
+  hotspots still work.** Tapping a dimmed hotspot switches straight to that
+  threat — one tap, not close-then-tap. (Decided at the museum review; the
+  original spec had them inactive.) The scrim still sits *above* the hotspot
+  layer so they show dimmed, which means it receives those taps: `scrimTap` in
+  `App.svelte` maps the tap back to stage coordinates and hit-tests the hotspot
+  circles. On a switch the old popup shrinks into its hotspot while the new one
+  grows out of its own (the `{#key}` around `Popup`).
 - **Closing**, three ways, all landing on `activeThreatId = null`:
   - the popup's **Close** link
-  - tapping the dimmed background
+  - tapping the dimmed background anywhere outside a hotspot
   - the idle timer
-- The scrim is **black at 80% opacity** (`rgba(0, 0, 0, 0.8)`), covering the
-  full 1920x1080. Expect this to come down somewhat — the designer flagged it
-  may end up lighter — so keep it a single CSS custom property.
+- The scrim is **black at 56% opacity** (`--scrim` in `app.css`), covering the
+  full 1920x1080. It started at the designer's 80%, came down to 66%, then to
+  56% once dimmed hotspots became tappable — they need to stay readable as
+  targets. Keep it a single CSS custom property.
 - Layer order, bottom to top: illustration → hotspots → dimming scrim → popup.
 - **No press/touch-down state.** The popup appearing is the only feedback.
 
@@ -345,8 +350,8 @@ the primary one), `get_metadata` (node tree as XML, with positions and sizes),
 - Close link on its own line as the last item in the flow, centred — not pinned
   to the circle's bottom
 - No visited state and no press state; hotspots never change appearance
-- Background dims when a popup opens, and other hotspots go inactive — no
-  shortcut from one popup to the next
+- Background dims when a popup opens; tapping another (dimmed) hotspot
+  switches straight to it
 - Popup grows out of its hotspot on open, shrinks back on close
 - Two build modes, kiosk + review; no web, no attract; idle timer only closes
   an open popup

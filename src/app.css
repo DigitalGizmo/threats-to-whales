@@ -28,7 +28,7 @@
 
   /* Designer's value. She expects this to come down, so it lives in one
      place — change it here, nowhere else. */
-  --scrim: rgb(0 0 0 / 0.66);
+  --scrim: rgb(0 0 0 / 0.56);
 
   /* TODO: not pulled from Figma — the desktop app's active tab was not a
      design file when this was written. Both values are estimates off the

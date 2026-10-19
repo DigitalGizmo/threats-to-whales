@@ -37,6 +37,22 @@
     if (IDLE_TIMEOUT > 0 && activeThreatId) timeoutId = setTimeout(close, IDLE_TIMEOUT);
   }
 
+  // The scrim sits above the hotspots so they show dimmed, which also means it
+  // catches every tap meant for them. So it hit-tests the tap itself: inside a
+  // hotspot's circle switches straight to that threat, anywhere else closes.
+  // The stage is scaled to the viewport, so the tap is mapped back to the
+  // 1920x1080 stage coordinates the hotspot geometry is authored in.
+  function scrimTap(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) * 1920) / rect.width;
+    const y = ((e.clientY - rect.top) * 1080) / rect.height;
+    const hit = threats.find(
+      ({ hotspot: h }) => (x - h.cx) ** 2 + (y - h.cy) ** 2 <= h.r ** 2
+    );
+    if (hit) select(hit.id);
+    else close();
+  }
+
   function select(id) {
     activeThreatId = id;
     shownThreat = threats.find((t) => t.id === id) ?? null;
@@ -76,12 +92,12 @@
   {#if activeThreat && shownThreat}
     <!-- A button, not a div: it is the main way to dismiss the popup, so it
          needs to be reachable without a pointer. -->
-    <button class="scrim" aria-label="Close" onclick={close} transition:fade={{ duration: 200 }}
+    <button class="scrim" aria-label="Close" onclick={scrimTap} transition:fade={{ duration: 200 }}
     ></button>
-    <!-- Keyed so switching straight from one threat to another rebuilds the
-         component. Today the scrim makes that impossible, but Popup measures
-         its geometry once at init, and this is what keeps that correct if
-         direct switching is ever turned on. -->
+    <!-- Keyed so switching straight from one threat to another (a tap on a
+         dimmed hotspot, see scrimTap) rebuilds the component: Popup measures
+         its geometry once at init, and the old popup shrinks back into its
+         hotspot while the new one grows out of its own. -->
     {#key shownThreat.id}
       <Popup threat={shownThreat} onClose={close} />
     {/key}
